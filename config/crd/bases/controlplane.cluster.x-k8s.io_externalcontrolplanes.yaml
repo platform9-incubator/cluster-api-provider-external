@@ -16,7 +16,7 @@ spec:
     listKind: ExternalControlPlaneList
     plural: externalcontrolplanes
     shortNames:
-    - ncp
+    - ecp
     singular: externalcontrolplane
   scope: Namespaced
   versions:
@@ -32,13 +32,8 @@ spec:
       type: boolean
     - description: ExternalControlPlane API Server is ready to receive requests
       jsonPath: .status.ready
-      name: API Server Available
+      name: Available
       type: boolean
-    - description: Total number of non-terminated machines targeted by this control
-        plane
-      jsonPath: .status.replicas
-      name: Replicas
-      type: integer
     - description: Kubernetes version associated with this control plane
       jsonPath: .status.version
       name: Version

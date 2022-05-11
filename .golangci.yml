@@ -1,0 +1,46 @@
+linters:
+  disable-all: true
+  enable:
+  - asciicheck
+  - deadcode
+  - errcheck
+  - goconst
+  - goimports
+  - gosimple
+  - govet
+  - ineffassign
+  - misspell
+  - nakedret
+  - nilerr
+  - revive
+  - staticcheck
+  - structcheck
+  - stylecheck
+  - typecheck
+  - unconvert
+  - unused
+  - varcheck
+  - whitespace
+
+
+
+linters-settings:
+  staticcheck:
+    go: "1.18"
+  stylecheck:
+    go: "1.18"
+  unused:
+    go: "1.18"
+
+
+severity:
+  default-severity: error
+  case-sensitive: true
+  rules:
+    - linters:
+        - misspell
+      severity: warning
+    - linters:
+        - goconst
+      severity: warning
+

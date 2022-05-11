@@ -42,14 +42,13 @@ type ExternalControlPlaneStatus struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:path=externalcontrolplanes,shortName=ncp,scope=Namespaced,categories=cluster-api
+// +kubebuilder:resource:path=externalcontrolplanes,shortName=ecp,scope=Namespaced,categories=cluster-api
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
 // +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
 // +kubebuilder:printcolumn:name="Initialized",type=boolean,JSONPath=".status.initialized",description="This denotes whether or not the control plane has the uploaded external-config configmap"
-// +kubebuilder:printcolumn:name="API Server Available",type=boolean,JSONPath=".status.ready",description="ExternalControlPlane API Server is ready to receive requests"
-// +kubebuilder:printcolumn:name="Replicas",type=integer,JSONPath=".status.replicas",description="Total number of non-terminated machines targeted by this control plane"
+// +kubebuilder:printcolumn:name="Available",type=boolean,JSONPath=".status.ready",description="ExternalControlPlane API Server is ready to receive requests"
 // +kubebuilder:printcolumn:name="Version",type=string,JSONPath=".status.version",description="Kubernetes version associated with this control plane"
 
 // ExternalControlPlane is the Schema for the ExternalControlPlane API.
