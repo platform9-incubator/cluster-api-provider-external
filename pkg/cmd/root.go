@@ -28,6 +28,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&opts.Debug, "debug", opts.Debug, "More logs. [PF9_DEBUG]")
 
 	cmd.AddCommand(NewCmdImport(opts))
+	cmd.AddCommand(NewCmdRun(opts))
 	cmd.AddCommand(extensions.NewCobraCmdWithDefaults())
 
 	return cmd
