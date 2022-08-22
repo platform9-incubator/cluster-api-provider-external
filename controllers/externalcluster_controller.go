@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -168,17 +169,13 @@ func (r *ExternalClusterReconciler) reconcileNormal(ctx context.Context, cluster
 
 	log.V(4).Info("Syncing external machines with the nodes in the external cluster")
 	for _, node := range nodes.Items {
-		machine := convertNodeToMachine(clusterScope.Cluster, &node)
+		machine, externalMachine := convertNodeToExternalMachine(clusterScope.Cluster, &node)
 
 		err := r.Client.Create(ctx, machine)
 		if err != nil && !apierrors.IsAlreadyExists(err) {
 			return ctrl.Result{}, err
 		}
-		err = r.Client.Create(ctx, machine)
-		if err != nil && !apierrors.IsAlreadyExists(err) {
-			return ctrl.Result{}, err
-		}
-		err = r.Client.Create(ctx, machine)
+		err = r.Client.Create(ctx, externalMachine)
 		if err != nil && !apierrors.IsAlreadyExists(err) {
 			return ctrl.Result{}, err
 		}
@@ -194,23 +191,31 @@ func (r *ExternalClusterReconciler) reconcileDelete(ctx context.Context, cluster
 	return ctrl.Result{}, nil
 }
 
-func convertNodeToMachine(cluster *clusterv1.Cluster, node *corev1.Node) *clusterv1.Machine {
+func convertNodeToExternalMachine(cluster *clusterv1.Cluster, node *corev1.Node) (*clusterv1.Machine, *externalv1.ExternalMachine) {
 	machineName := node.Name
 	return &clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      machineName,
-			Namespace: cluster.Namespace,
-		},
-		Spec: clusterv1.MachineSpec{
-			ClusterName: cluster.Name,
-			Bootstrap:   clusterv1.Bootstrap{}, // TODO can we do without?
-			InfrastructureRef: corev1.ObjectReference{
-				Kind: "ExternalMachine",
-				Name: machineName,
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      machineName,
+				Namespace: cluster.Namespace,
 			},
-			Version:    &node.Status.NodeInfo.KubeletVersion,
-			ProviderID: &node.Spec.ProviderID,
-		},
-		Status: clusterv1.MachineStatus{},
-	}
+			Spec: clusterv1.MachineSpec{
+				ClusterName: cluster.Name,
+				Bootstrap: clusterv1.Bootstrap{
+					DataSecretName: pointer.String("non-existent-secret"),
+				},
+				InfrastructureRef: corev1.ObjectReference{
+					Kind: "ExternalMachine",
+					Name: machineName,
+				},
+				Version:    &node.Status.NodeInfo.KubeletVersion,
+				ProviderID: &node.Spec.ProviderID,
+			},
+			Status: clusterv1.MachineStatus{},
+		}, &externalv1.ExternalMachine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      machineName,
+				Namespace: cluster.Namespace,
+			},
+			Spec: externalv1.ExternalMachineSpec{},
+		}
 }

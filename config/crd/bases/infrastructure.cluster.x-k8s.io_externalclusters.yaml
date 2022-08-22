@@ -49,11 +49,6 @@ spec:
           spec:
             description: ExternalClusterSpec defines the desired state of ExternalCluster
             properties:
-              caBundle:
-                description: CaBundle is a PEM encoded CA bundle which will be used
-                  to validate the webhook's server certificate. If unspecified, system
-                  trust roots on the apiserver are used.
-                type: string
               controlPlaneEndpoint:
                 description: APIEndpoint represents a reachable Kubernetes API endpoint.
                 properties:
