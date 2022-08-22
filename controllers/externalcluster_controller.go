@@ -171,6 +171,7 @@ func (r *ExternalClusterReconciler) reconcileNormal(ctx context.Context, cluster
 	for _, node := range nodes.Items {
 		machine, externalMachine := convertNodeToExternalMachine(clusterScope.Cluster, &node)
 
+		// TODO update if already created (with controllerutil.CreateOrUpdate)
 		err := r.Client.Create(ctx, machine)
 		if err != nil && !apierrors.IsAlreadyExists(err) {
 			return ctrl.Result{}, err
@@ -204,8 +205,9 @@ func convertNodeToExternalMachine(cluster *clusterv1.Cluster, node *corev1.Node)
 					DataSecretName: pointer.String("non-existent-secret"),
 				},
 				InfrastructureRef: corev1.ObjectReference{
-					Kind: "ExternalMachine",
-					Name: machineName,
+					APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+					Kind:       "ExternalMachine",
+					Name:       machineName,
 				},
 				Version:    &node.Status.NodeInfo.KubeletVersion,
 				ProviderID: &node.Spec.ProviderID,
