@@ -29,74 +29,76 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// ClusterScopeParams defines the input parameters used to create a new Scope.
-type ClusterScopeParams struct {
+// MachineScopeParams defines the input parameters used to create a new Scope.
+type MachineScopeParams struct {
 	Client          client.Client
 	Logger          logr.Logger
 	Cluster         *clusterv1beta1.Cluster
-	ExternalCluster *externalv1.ExternalCluster
+	Machine         *clusterv1beta1.Machine
+	ExternalMachine *externalv1.ExternalMachine
 }
 
-// NewClusterScope creates a new ClusterScope from the supplied parameters.
-// This is meant to be called for each reconcile iteration only on ClusterReconciler.
-func NewClusterScope(params ClusterScopeParams) (*ExternalClusterScope, error) {
-	if params.Cluster == nil {
-		return nil, errors.New("Cluster is required when creating a ExternalClusterScope")
+// NewMachineScope creates a new MachineScope from the supplied parameters.
+// This is meant to be called for each reconcile iteration only on MachineReconciler.
+func NewMachineScope(params MachineScopeParams) (*ExternalMachineScope, error) {
+	if params.Machine == nil {
+		return nil, errors.New("Machine is required when creating a ExternalMachineScope")
 	}
-	if params.ExternalCluster == nil {
-		return nil, errors.New("ExternalCluster is required when creating a ExternalClusterScope")
+	if params.ExternalMachine == nil {
+		return nil, errors.New("ExternalMachine is required when creating a ExternalMachineScope")
 	}
 	// if params.Logger == nil {
 	// 	params.Logger = klogr.New()
 	// }
 
-	helper, err := patch.NewHelper(params.ExternalCluster, params.Client)
+	helper, err := patch.NewHelper(params.ExternalMachine, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 
-	return &ExternalClusterScope{
+	return &ExternalMachineScope{
 		Logger:          params.Logger,
 		client:          params.Client,
-		Cluster:         params.Cluster,
-		ExternalCluster: params.ExternalCluster,
+		Machine:         params.Machine,
+		ExternalMachine: params.ExternalMachine,
 		patchHelper:     helper,
 	}, nil
 }
 
-// ClusterScope defines the basic context for an actuator to operate upon.
-type ExternalClusterScope struct {
+// MachineScope defines the basic context for an actuator to operate upon.
+type ExternalMachineScope struct {
 	logr.Logger
 	client      client.Client
 	patchHelper *patch.Helper
 
 	Cluster         *clusterv1beta1.Cluster
-	ExternalCluster *externalv1.ExternalCluster
+	Machine         *clusterv1beta1.Machine
+	ExternalMachine *externalv1.ExternalMachine
 }
 
 // Close closes the current scope persisting the cluster configuration and status.
-func (s *ExternalClusterScope) Close() error {
-	return s.patchHelper.Patch(context.TODO(), s.ExternalCluster)
+func (s *ExternalMachineScope) Close() error {
+	return s.patchHelper.Patch(context.TODO(), s.ExternalMachine)
 }
 
 // Name returns the cluster name.
-func (s *ExternalClusterScope) Name() string {
-	return s.Cluster.GetName()
+func (s *ExternalMachineScope) Name() string {
+	return s.Machine.GetName()
 }
 
 // Namespace returns the cluster namespace.
-func (s *ExternalClusterScope) Namespace() string {
-	return s.Cluster.GetNamespace()
+func (s *ExternalMachineScope) Namespace() string {
+	return s.Machine.GetNamespace()
 }
 
-func (s *ExternalClusterScope) NamespacedName() types.NamespacedName {
+func (s *ExternalMachineScope) NamespacedName() types.NamespacedName {
 	return types.NamespacedName{
-		Namespace: s.Cluster.Namespace,
-		Name:      s.Cluster.Name,
+		Namespace: s.Machine.Namespace,
+		Name:      s.Machine.Name,
 	}
 }
 
-// SetReady sets the ExternalCluster Ready Status
-func (s *ExternalClusterScope) SetReady() {
-	s.ExternalCluster.Status.Ready = true
+// SetReady sets the ExternalMachine Ready Status
+func (s *ExternalMachineScope) SetReady() {
+	s.ExternalMachine.Status.Ready = true
 }

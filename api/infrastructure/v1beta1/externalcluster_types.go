@@ -18,7 +18,7 @@ package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -27,13 +27,7 @@ import (
 // ExternalClusterSpec defines the desired state of ExternalCluster
 type ExternalClusterSpec struct {
 	// +optional
-	ControlPlaneEndpoint clusterv1beta1.APIEndpoint `json:"controlPlaneEndpoint"`
-
-	// CaBundle is a PEM encoded CA bundle which will be used to validate the
-	// webhook's server certificate. If unspecified, system trust roots on the
-	// apiserver are used.
-	// +optional
-	CABundle string `json:"caBundle,omitempty"`
+	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
 }
 
 // ExternalClusterStatus defines the observed state of ExternalCluster
@@ -52,7 +46,20 @@ type ExternalClusterStatus struct {
 	// +optional
 	FailureMessage *string `json:"failureMessage,omitempty"`
 
+	// Conditions defines current service state of the NodeletControlPlane.
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 	// TODO FailureDomains
+}
+
+// GetConditions returns the set of conditions for this object.
+func (in *ExternalCluster) GetConditions() clusterv1.Conditions {
+	return in.Status.Conditions
+}
+
+// SetConditions sets the conditions on this object.
+func (in *ExternalCluster) SetConditions(conditions clusterv1.Conditions) {
+	in.Status.Conditions = conditions
 }
 
 // +kubebuilder:object:root=true

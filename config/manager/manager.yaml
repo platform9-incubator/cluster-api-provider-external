@@ -30,6 +30,7 @@ spec:
       - command:
         - /manager
         args:
+        - run
         - --leader-elect
         image: controller:latest
         name: manager

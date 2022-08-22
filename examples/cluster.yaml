@@ -1,0 +1,31 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: example-external-cluster
+  namespace: default
+spec:
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: ExternalCluster
+    name: example-external-cluster
+  controlPlaneRef: # Needed only because otherwise CAPI will default to the legacy-style clusters when the control plane is absent
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: ExternalControlPlane
+    name: example-external-cluster
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: ExternalCluster
+metadata:
+  name: example-external-cluster
+  namespace: default
+spec:
+  controlPlaneEndpoint:
+    host: localhost
+    port: 6443
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: ExternalControlPlane
+metadata:
+  name: example-external-cluster
+  namespace: default
+spec: {}

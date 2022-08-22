@@ -1,6 +1,6 @@
 // Package v1beta1 contains API Schema definitions for the controlplane v1beta1 API group
-//+kubebuilder:object:generate=true
-//+groupName=controlplane.cluster.x-k8s.io
+// +kubebuilder:object:generate=true
+// +groupName=controlplane.cluster.x-k8s.io
 package v1beta1
 
 import (

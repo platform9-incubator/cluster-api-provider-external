@@ -10,6 +10,7 @@ commonLabels:
 resources:
 - bases/controlplane.cluster.x-k8s.io_externalcontrolplanes.yaml
 - bases/infrastructure.cluster.x-k8s.io_externalclusters.yaml
+- bases/infrastructure.cluster.x-k8s.io_externalmachines.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 #patchesStrategicMerge:

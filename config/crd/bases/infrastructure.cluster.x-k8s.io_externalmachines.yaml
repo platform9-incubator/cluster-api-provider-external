@@ -6,33 +6,29 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: externalclusters.infrastructure.cluster.x-k8s.io
+  name: externalmachines.infrastructure.cluster.x-k8s.io
 spec:
   group: infrastructure.cluster.x-k8s.io
   names:
-    kind: ExternalCluster
-    listKind: ExternalClusterList
-    plural: externalclusters
-    singular: externalcluster
+    kind: ExternalMachine
+    listKind: ExternalMachineList
+    plural: externalmachines
+    singular: externalmachine
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - description: Cluster to which this ExternalCluster belongs
+    - description: Machine to which this ExternalMachine belongs
       jsonPath: .metadata.labels.cluster\.x-k8s\.io/cluster-name
-      name: Cluster
+      name: Machine
       type: string
-    - description: API Endpoint
-      jsonPath: .spec.controlPlaneEndpoint
-      name: Endpoint
-      type: string
-    - description: Cluster infrastructure is ready for External instances
+    - description: Machine infrastructure is ready for External instances
       jsonPath: .status.ready
       name: Ready
       type: string
     name: v1beta1
     schema:
       openAPIV3Schema:
-        description: ExternalCluster is the Schema for the externalclusters API
+        description: ExternalMachine is the Schema for the externalclusters API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -47,30 +43,10 @@ spec:
           metadata:
             type: object
           spec:
-            description: ExternalClusterSpec defines the desired state of ExternalCluster
-            properties:
-              caBundle:
-                description: CaBundle is a PEM encoded CA bundle which will be used
-                  to validate the webhook's server certificate. If unspecified, system
-                  trust roots on the apiserver are used.
-                type: string
-              controlPlaneEndpoint:
-                description: APIEndpoint represents a reachable Kubernetes API endpoint.
-                properties:
-                  host:
-                    description: The hostname on which the API server is serving.
-                    type: string
-                  port:
-                    description: The port on which the API server is serving.
-                    format: int32
-                    type: integer
-                required:
-                - host
-                - port
-                type: object
+            description: ExternalMachineSpec defines the desired state of ExternalMachine
             type: object
           status:
-            description: ExternalClusterStatus defines the observed state of ExternalCluster
+            description: ExternalMachineStatus defines the observed state of ExternalMachine
             properties:
               conditions:
                 description: Conditions defines current service state of the NodeletControlPlane.
@@ -117,15 +93,6 @@ spec:
                   - type
                   type: object
                 type: array
-              failureMessage:
-                description: ErrorMessage indicates that there is a terminal problem
-                  reconciling the state, and will be set to a descriptive error message.
-                type: string
-              failureReason:
-                description: FailureReason indicates that there is a terminal problem
-                  reconciling the state, and will be set to a token value suitable
-                  for programmatic interpretation.
-                type: string
               ready:
                 type: boolean
             type: object
