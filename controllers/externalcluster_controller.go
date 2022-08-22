@@ -173,8 +173,6 @@ func (r *ExternalClusterReconciler) reconcileNormal(ctx context.Context, cluster
 		return ctrl.Result{}, err
 	}
 
-	// TODO add ownerReference to the kubeconfig secret
-
 	log.V(4).Info("Checking if the cluster is accessible")
 	_, err = clusterClient.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -203,6 +201,7 @@ func (r *ExternalClusterReconciler) reconcileNormal(ctx context.Context, cluster
 			return ctrl.Result{}, err
 		}
 	}
+	// TODO remove machines not found in the nodes. The problem is that the node within the k8s cluster will be preempted/deleted.
 
 	// TODO calculate the ready from the conditions (one condition is false -> ready = false)
 	clusterScope.ExternalCluster.Status.Ready = true
@@ -210,7 +209,6 @@ func (r *ExternalClusterReconciler) reconcileNormal(ctx context.Context, cluster
 }
 
 func (r *ExternalClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.ExternalClusterScope) (ctrl.Result, error) {
-	// controllerutil.RemoveFinalizer(clusterScope.ExternalCluster, ClusterFinalizer)
 	return ctrl.Result{}, nil
 }
 
@@ -240,6 +238,11 @@ func convertNodeToExternalMachine(cluster *clusterv1.Cluster, node *corev1.Node)
 				Name:      machineName,
 				Namespace: cluster.Namespace,
 			},
-			Spec: externalv1.ExternalMachineSpec{},
+			Spec: externalv1.ExternalMachineSpec{
+				ProviderID: node.Spec.ProviderID,
+			},
+			Status: externalv1.ExternalMachineStatus{
+				Addresses: node.Status.Addresses,
+			},
 		}
 }

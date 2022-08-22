@@ -44,10 +44,33 @@ spec:
             type: object
           spec:
             description: ExternalMachineSpec defines the desired state of ExternalMachine
+            properties:
+              providerID:
+                description: ProviderID is the unique identifier as specified by the
+                  cloud provider.
+                type: string
             type: object
           status:
             description: ExternalMachineStatus defines the observed state of ExternalMachine
             properties:
+              addresses:
+                description: Addresses contains the IP and/or DNS addresses of the
+                  CoxEdge instances.
+                items:
+                  description: NodeAddress contains information for the node's address.
+                  properties:
+                    address:
+                      description: The node address.
+                      type: string
+                    type:
+                      description: Node address type, one of Hostname, ExternalIP
+                        or InternalIP.
+                      type: string
+                  required:
+                  - address
+                  - type
+                  type: object
+                type: array
               conditions:
                 description: Conditions defines current service state of the NodeletControlPlane.
                 items:

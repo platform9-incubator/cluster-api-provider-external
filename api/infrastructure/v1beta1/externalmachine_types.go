@@ -17,12 +17,16 @@ limitations under the License.
 package v1beta1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // ExternalMachineSpec defines the desired state of ExternalMachine
 type ExternalMachineSpec struct {
+	// ProviderID is the unique identifier as specified by the cloud provider.
+	// +optional
+	ProviderID string `json:"providerID,omitempty"`
 }
 
 // ExternalMachineStatus defines the observed state of ExternalMachine
@@ -34,7 +38,8 @@ type ExternalMachineStatus struct {
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
-	// TODO addresses
+	// Addresses contains the IP and/or DNS addresses of the CoxEdge instances.
+	Addresses []corev1.NodeAddress `json:"addresses,omitempty"`
 }
 
 // GetConditions returns the set of conditions for this object.
