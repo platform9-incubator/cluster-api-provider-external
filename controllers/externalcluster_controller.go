@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	externalv1 "github.com/platform9/cluster-api-provider-external/api/infrastructure/v1beta1"
@@ -10,6 +11,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/pointer"
@@ -21,6 +23,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -66,18 +69,9 @@ func (r *ExternalClusterReconciler) SetupWithManager(ctx context.Context, mgr ct
 }
 
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
-// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=externalclusters,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=externalclusters;externalmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=externalclusters/status,verbs=get;update;patch
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the ExternalCluster object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *ExternalClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
 
@@ -137,6 +131,32 @@ func (r *ExternalClusterReconciler) reconcileNormal(ctx context.Context, cluster
 
 	// Reconcile the kubeconfig secret
 	log.V(4).Info("Fetching the external cluster kubeconfig from the associated")
+	kubeconfigSecret := &corev1.Secret{}
+	err := r.Client.Get(ctx, types.NamespacedName{
+		Namespace: clusterScope.Namespace(),
+		Name:      fmt.Sprintf("%s-kubeconfig", clusterScope.Name()),
+	}, kubeconfigSecret)
+	if err != nil {
+		conditions.MarkFalse(clusterScope.ExternalCluster, ReadyCondition, KubeconfigSecretNotFoundReason, clusterv1.ConditionSeverityInfo, err.Error())
+		return ctrl.Result{}, err
+	}
+	if kubeconfigSecret.Data == nil || kubeconfigSecret.Data["value"] == nil {
+		return ctrl.Result{}, errors.New("kubeconfig does not contain secret")
+	}
+
+	if len(kubeconfigSecret.ObjectMeta.OwnerReferences) == 0 {
+		log.V(4).Info("Updating the controller reference on the kubeconfig secret")
+		err = controllerutil.SetControllerReference(clusterScope.Cluster, kubeconfigSecret, r.Scheme)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		err = r.Client.Update(ctx, kubeconfigSecret)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
 	rawKubeconfig, err := kubeconfig.FromSecret(ctx, r.Client, clusterScope.NamespacedName())
 	if err != nil {
 		conditions.MarkFalse(clusterScope.ExternalCluster, ReadyCondition, KubeconfigSecretNotFoundReason, clusterv1.ConditionSeverityInfo, err.Error())
@@ -152,6 +172,8 @@ func (r *ExternalClusterReconciler) reconcileNormal(ctx context.Context, cluster
 		conditions.MarkFalse(clusterScope.ExternalCluster, ReadyCondition, KubeconfigInvalidReason, clusterv1.ConditionSeverityInfo, err.Error())
 		return ctrl.Result{}, err
 	}
+
+	// TODO add ownerReference to the kubeconfig secret
 
 	log.V(4).Info("Checking if the cluster is accessible")
 	_, err = clusterClient.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
@@ -182,7 +204,7 @@ func (r *ExternalClusterReconciler) reconcileNormal(ctx context.Context, cluster
 		}
 	}
 
-	// TODO actually check if it is ready
+	// TODO calculate the ready from the conditions (one condition is false -> ready = false)
 	clusterScope.ExternalCluster.Status.Ready = true
 	return ctrl.Result{}, nil
 }
