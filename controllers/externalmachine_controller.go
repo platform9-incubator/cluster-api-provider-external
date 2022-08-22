@@ -48,8 +48,8 @@ func (r *ExternalMachineReconciler) SetupWithManager(ctx context.Context, mgr ct
 }
 
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
-// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=externalclusters,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=externalclusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=externalmachines,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=externalmachines/status,verbs=get;update;patch
 
 func (r *ExternalMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
@@ -74,12 +74,12 @@ func (r *ExternalMachineReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	// Fetch the cluster
-	cluster, err := util.GetOwnerCluster(ctx, r.Client, externalMachine.ObjectMeta)
+	cluster, err := util.GetOwnerCluster(ctx, r.Client, machine.ObjectMeta)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 	if cluster == nil {
-		log.Info("OwnerMachine is not set yet. Requeuing...")
+		log.Info("OwnerCluster is not set yet. Requeuing...")
 		return ctrl.Result{}, nil
 	}
 
@@ -89,10 +89,11 @@ func (r *ExternalMachineReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	// Create the machine scope
-	clusterScope, err := scope.NewMachineScope(scope.MachineScopeParams{
+	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
 		Logger:          log,
 		Client:          r.Client,
 		Machine:         machine,
+		Cluster:         cluster,
 		ExternalMachine: &externalMachine,
 	})
 	if err != nil {
@@ -100,7 +101,7 @@ func (r *ExternalMachineReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	defer func() {
-		if err := clusterScope.Close(); err != nil && reterr == nil {
+		if err := machineScope.Close(); err != nil && reterr == nil {
 			reterr = err
 		}
 		log.Info("Machine reconciled.")
@@ -108,9 +109,9 @@ func (r *ExternalMachineReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	// Handle deleted clusters
 	if !machine.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, clusterScope)
+		return r.reconcileDelete(ctx, machineScope)
 	}
-	return r.reconcileNormal(ctx, clusterScope)
+	return r.reconcileNormal(ctx, machineScope)
 }
 
 func (r *ExternalMachineReconciler) reconcileNormal(ctx context.Context, clusterScope *scope.ExternalMachineScope) (ctrl.Result, error) {

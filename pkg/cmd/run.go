@@ -164,6 +164,14 @@ func (o *RunOptions) Run(ctx context.Context) error {
 	}
 	log.Info("Started ExternalControlPlane reconciler")
 
+	if err = (&controllers.ExternalMachineReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(ctx, mgr); err != nil {
+		return fmt.Errorf("unable to create controller %s: %w", "ExternalMachine", err)
+	}
+	log.Info("Started ExternalMachine reconciler")
+
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		return fmt.Errorf("unable to set up health check: %w", err)
 	}
