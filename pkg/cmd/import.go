@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"strconv"
@@ -26,37 +27,45 @@ import (
 type ConfigOptions struct {
 	*RootOptions
 	MgmtKubeconfigPath    string
+	MgmtClusterNamespace  string
 	ClusterName           string
-	ClusterNamespace      string
 	ClusterKubeconfigPath string
 }
 
 func NewCmdImport(rootOptions *RootOptions) *cobra.Command {
 	opts := &ConfigOptions{
-		RootOptions:      rootOptions,
-		ClusterNamespace: metav1.NamespaceDefault,
+		RootOptions:          rootOptions,
+		MgmtClusterNamespace: metav1.NamespaceDefault,
 	}
 
 	cmd := &cobra.Command{
 		Use:   "import",
 		Short: "Import an external cluster into CAPI.",
 		Run:   cobras.Run(opts),
-		Args:  cobra.ExactArgs(1),
 	}
 
-	cmd.Flags().StringVarP(&opts.ClusterNamespace, "namespace", "n", opts.ClusterNamespace, "Namespace to create the cloud provider in.")
+	cmd.Flags().StringVarP(&opts.MgmtClusterNamespace, "namespace", "n", opts.MgmtClusterNamespace, "Namespace to create the cloud provider in.")
 	cmd.Flags().StringVar(&opts.ClusterKubeconfigPath, "kubeconfig", opts.ClusterKubeconfigPath, "Kubeconfig of the cluster to import.")
 	cmd.Flags().StringVar(&opts.MgmtKubeconfigPath, "mgmt-kubeconfig", opts.MgmtKubeconfigPath, "Kubeconfig of the management cluster to import the cluster into.")
+	cmd.Flags().StringVar(&opts.ClusterName, "name", opts.ClusterName, "Name of the cluster to import.")
 
 	return cmd
 }
 
 func (o *ConfigOptions) Complete(cmd *cobra.Command, args []string) error {
-	o.ClusterName = args[0]
 	return o.RootOptions.Complete(cmd, args)
 }
 
 func (o *ConfigOptions) Validate() error {
+	if len(o.ClusterName) == 0 {
+		return errors.New("name of the target cluster is required")
+	}
+	if len(o.MgmtKubeconfigPath) == 0 {
+		return errors.New("kubeconfig for the management cluster is required")
+	}
+	if len(o.ClusterKubeconfigPath) == 0 {
+		return errors.New("kubeconfig for the target cluster is required")
+	}
 	return o.RootOptions.Validate()
 }
 
@@ -106,7 +115,7 @@ func (o *ConfigOptions) Run(ctx context.Context) error {
 		&clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      o.ClusterName,
-				Namespace: o.ClusterNamespace,
+				Namespace: o.MgmtClusterNamespace,
 			},
 			Spec: clusterv1.ClusterSpec{
 				ControlPlaneRef: &corev1.ObjectReference{
@@ -124,7 +133,7 @@ func (o *ConfigOptions) Run(ctx context.Context) error {
 		&externalinfrav1.ExternalCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      o.ClusterName,
-				Namespace: o.ClusterNamespace,
+				Namespace: o.MgmtClusterNamespace,
 			},
 			Spec: externalinfrav1.ExternalClusterSpec{
 				ControlPlaneEndpoint: clusterv1.APIEndpoint{
@@ -136,14 +145,14 @@ func (o *ConfigOptions) Run(ctx context.Context) error {
 		&externalcontrolplanev1.ExternalControlPlane{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      o.ClusterName,
-				Namespace: o.ClusterNamespace,
+				Namespace: o.MgmtClusterNamespace,
 			},
 			Spec: externalcontrolplanev1.ExternalControlPlaneSpec{},
 		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-kubeconfig", o.ClusterName),
-				Namespace: o.ClusterNamespace,
+				Namespace: o.MgmtClusterNamespace,
 			},
 			Immutable: pointer.Bool(true),
 			StringData: map[string]string{
@@ -160,6 +169,6 @@ func (o *ConfigOptions) Run(ctx context.Context) error {
 		}
 	}
 
-	fmt.Printf("cluster imported as %s/%s.\n", o.ClusterNamespace, o.ClusterName)
+	fmt.Printf("cluster imported as %s/%s.\n", o.MgmtClusterNamespace, o.ClusterName)
 	return nil
 }
