@@ -131,12 +131,6 @@ func (o *ConfigOptions) Run(ctx context.Context) error {
 					Host: host,
 					Port: int32(port),
 				},
-				CABundle: string(workloadCfg.CAData),
-			},
-			Status: externalinfrav1.ExternalClusterStatus{
-				// TODO this should be determined by the controller
-				// !!! doesn't work like this !!!
-				Ready: true,
 			},
 		},
 		&externalcontrolplanev1.ExternalControlPlane{
@@ -145,13 +139,6 @@ func (o *ConfigOptions) Run(ctx context.Context) error {
 				Namespace: o.ClusterNamespace,
 			},
 			Spec: externalcontrolplanev1.ExternalControlPlaneSpec{},
-			Status: externalcontrolplanev1.ExternalControlPlaneStatus{
-				// TODO this should be determined by the controller
-				// !!! doesn't work like this !!!
-				Ready:       true,
-				Initialized: true,
-				// TODO determine version
-			},
 		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
