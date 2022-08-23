@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/platform9/cluster-api-provider-external/pkg/cmd"
+	"github.com/platform9-incubator/cluster-api-provider-external/pkg/cmd"
 )
 
 func main() {

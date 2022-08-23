@@ -21,7 +21,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	externalv1 "github.com/platform9/cluster-api-provider-external/api/controlplane/v1beta1"
+	externalv1 "github.com/platform9-incubator/cluster-api-provider-external/api/controlplane/v1beta1"
 
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"

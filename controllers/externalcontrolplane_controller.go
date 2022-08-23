@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	externalv1 "github.com/platform9/cluster-api-provider-external/api/controlplane/v1beta1"
-	"github.com/platform9/cluster-api-provider-external/pkg/scope"
+	externalv1 "github.com/platform9-incubator/cluster-api-provider-external/api/controlplane/v1beta1"
+	"github.com/platform9-incubator/cluster-api-provider-external/pkg/scope"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"

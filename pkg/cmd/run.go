@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/erwinvaneyk/cobras"
-	externalcontrolplanev1 "github.com/platform9/cluster-api-provider-external/api/controlplane/v1beta1"
-	externalinfrav1 "github.com/platform9/cluster-api-provider-external/api/infrastructure/v1beta1"
-	"github.com/platform9/cluster-api-provider-external/controllers"
+	externalcontrolplanev1 "github.com/platform9-incubator/cluster-api-provider-external/api/controlplane/v1beta1"
+	externalinfrav1 "github.com/platform9-incubator/cluster-api-provider-external/api/infrastructure/v1beta1"
+	"github.com/platform9-incubator/cluster-api-provider-external/controllers"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"

@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/erwinvaneyk/cobras"
-	externalcontrolplanev1 "github.com/platform9/cluster-api-provider-external/api/controlplane/v1beta1"
-	externalinfrav1 "github.com/platform9/cluster-api-provider-external/api/infrastructure/v1beta1"
+	externalcontrolplanev1 "github.com/platform9-incubator/cluster-api-provider-external/api/controlplane/v1beta1"
+	externalinfrav1 "github.com/platform9-incubator/cluster-api-provider-external/api/infrastructure/v1beta1"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
