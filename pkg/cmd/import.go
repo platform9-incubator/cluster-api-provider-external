@@ -11,15 +11,14 @@ import (
 	"github.com/erwinvaneyk/cobras"
 	externalcontrolplanev1 "github.com/platform9-incubator/cluster-api-provider-external/api/controlplane/v1beta1"
 	externalinfrav1 "github.com/platform9-incubator/cluster-api-provider-external/api/infrastructure/v1beta1"
+	importer "github.com/platform9-incubator/cluster-api-provider-external/pkg/cape"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -30,6 +29,11 @@ type ConfigOptions struct {
 	MgmtClusterNamespace  string
 	ClusterName           string
 	ClusterKubeconfigPath string
+	ImportFromQbert       bool
+	Username              string
+	Password              string
+	Project               string
+	FQDN                  string
 }
 
 func NewCmdImport(rootOptions *RootOptions) *cobra.Command {
@@ -48,6 +52,11 @@ func NewCmdImport(rootOptions *RootOptions) *cobra.Command {
 	cmd.Flags().StringVar(&opts.ClusterKubeconfigPath, "kubeconfig", opts.ClusterKubeconfigPath, "Kubeconfig of the cluster to import.")
 	cmd.Flags().StringVar(&opts.MgmtKubeconfigPath, "mgmt-kubeconfig", opts.MgmtKubeconfigPath, "Kubeconfig of the management cluster to import the cluster into.")
 	cmd.Flags().StringVar(&opts.ClusterName, "name", opts.ClusterName, "Name of the cluster to import.")
+	cmd.Flags().BoolVar(&opts.ImportFromQbert, "qbert", false, "import all clusters from qbert")
+	cmd.Flags().StringVar(&opts.Username, "username", "", "username to connect to the PF9 control plane")
+	cmd.Flags().StringVar(&opts.Password, "password", "", "password to connect to the PF9 control plane")
+	cmd.Flags().StringVar(&opts.Project, "project", "service", "project to authenticate as when connecting to the PF9 control plane")
+	cmd.Flags().StringVar(&opts.FQDN, "fqdn", "", "PF9 control plane URL")
 
 	return cmd
 }
@@ -57,13 +66,13 @@ func (o *ConfigOptions) Complete(cmd *cobra.Command, args []string) error {
 }
 
 func (o *ConfigOptions) Validate() error {
-	if len(o.ClusterName) == 0 {
+	if len(o.ClusterName) == 0 && !o.ImportFromQbert {
 		return errors.New("name of the target cluster is required")
 	}
 	if len(o.MgmtKubeconfigPath) == 0 {
 		return errors.New("kubeconfig for the management cluster is required")
 	}
-	if len(o.ClusterKubeconfigPath) == 0 {
+	if len(o.ClusterKubeconfigPath) == 0 && !o.ImportFromQbert {
 		return errors.New("kubeconfig for the target cluster is required")
 	}
 	return o.RootOptions.Validate()
@@ -110,63 +119,21 @@ func (o *ConfigOptions) Run(ctx context.Context) error {
 		return err
 	}
 
-	log.Debugf("Creating an ExternalCluster for cluster")
-	resources := []client.Object{
-		&clusterv1.Cluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      o.ClusterName,
-				Namespace: o.MgmtClusterNamespace,
-			},
-			Spec: clusterv1.ClusterSpec{
-				ControlPlaneRef: &corev1.ObjectReference{
-					APIVersion: externalcontrolplanev1.GroupVersion.String(),
-					Kind:       "ExternalControlPlane",
-					Name:       o.ClusterName,
-				},
-				InfrastructureRef: &corev1.ObjectReference{
-					APIVersion: externalinfrav1.GroupVersion.String(),
-					Kind:       "ExternalCluster",
-					Name:       o.ClusterName,
-				},
-			},
-		},
-		&externalinfrav1.ExternalCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      o.ClusterName,
-				Namespace: o.MgmtClusterNamespace,
-			},
-			Spec: externalinfrav1.ExternalClusterSpec{
-				ControlPlaneEndpoint: clusterv1.APIEndpoint{
-					Host: host,
-					Port: int32(port),
-				},
-			},
-		},
-		&externalcontrolplanev1.ExternalControlPlane{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      o.ClusterName,
-				Namespace: o.MgmtClusterNamespace,
-			},
-			Spec: externalcontrolplanev1.ExternalControlPlaneSpec{},
-		},
-		&corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-kubeconfig", o.ClusterName),
-				Namespace: o.MgmtClusterNamespace,
-			},
-			Immutable: pointer.Bool(true),
-			StringData: map[string]string{
-				"value": string(bs),
-			},
-			Type: clusterv1.ClusterSecretType,
-		},
+	clsImporter := importer.ClusterImporter{
+		MgmtClient: mgmtClient,
+		Log:        log,
 	}
-	for _, resource := range resources {
-		log.Debugf("Creating resource %T: %s/%s", resource, resource.GetNamespace(), resource.GetName())
-		err := mgmtClient.Create(ctx, resource)
-		if err != nil {
-			return err
+
+	if o.ImportFromQbert {
+		if o.MgmtClusterNamespace == "" {
+			o.MgmtClusterNamespace = "default"
 		}
+		return clsImporter.ImportClustersFromQbert(ctx, o.Username, o.Password, o.Project, "RegionOne", o.MgmtClusterNamespace, o.FQDN)
+	}
+	log.Debugf("Creating an ExternalCluster for cluster")
+	err = clsImporter.ImportClusterResources(ctx, o.ClusterName, o.MgmtClusterNamespace, host, port, string(bs))
+	if err != nil {
+		panic(fmt.Sprintf("cluster import failed: %v", err))
 	}
 
 	fmt.Printf("cluster imported as %s/%s.\n", o.MgmtClusterNamespace, o.ClusterName)

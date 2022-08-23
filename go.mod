@@ -7,6 +7,7 @@ require (
 	github.com/erwinvaneyk/goversion v0.1.3
 	github.com/go-logr/logr v1.2.0
 	github.com/pkg/errors v0.9.1
+	github.com/platform9/pf9-sdk-go v0.0.0-20220823202015-fb4fbc0a9964
 	github.com/spf13/cobra v1.2.1
 	go.uber.org/zap v1.19.1
 	k8s.io/api v0.23.5
@@ -35,6 +36,8 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.1.2 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
