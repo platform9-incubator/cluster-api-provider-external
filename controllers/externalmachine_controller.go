@@ -30,6 +30,10 @@ func (r *ExternalMachineReconciler) SetupWithManager(ctx context.Context, mgr ct
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		For(&externalv1.ExternalMachine{}).
 		WithEventFilter(predicates.ResourceNotPaused(ctrl.LoggerFrom(ctx))). // don't queue reconcile if resource is paused
+		Watches(
+			&source.Kind{Type: &clusterv1.Machine{}},
+			handler.EnqueueRequestsFromMapFunc(util.MachineToInfrastructureMapFunc(externalv1.GroupVersion.WithKind("ExternalMachine"))),
+		).
 		Build(r)
 	if err != nil {
 		return errors.Wrapf(err, "error creating controller")
@@ -73,14 +77,9 @@ func (r *ExternalMachineReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		log.Info("OwnerMachine is not set yet. Requeuing...")
 		return ctrl.Result{}, nil
 	}
-
-	// Fetch the cluster
-	cluster, err := util.GetOwnerCluster(ctx, r.Client, machine.ObjectMeta)
+	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
 	if err != nil {
-		return ctrl.Result{}, err
-	}
-	if cluster == nil {
-		log.Info("OwnerCluster is not set yet. Requeuing...")
+		log.Info("Machine is missing cluster label or cluster does not exist")
 		return ctrl.Result{}, nil
 	}
 
@@ -119,7 +118,6 @@ func (r *ExternalMachineReconciler) reconcileNormal(ctx context.Context, cluster
 	// log := ctrl.LoggerFrom(ctx)
 	// externalMachine := clusterScope.ExternalMachine
 	// controllerutil.AddFinalizer(externalMachine, MachineFinalizer)
-
 	// TODO actually check if it is ready
 	clusterScope.ExternalMachine.Status.Ready = true
 	return ctrl.Result{}, nil

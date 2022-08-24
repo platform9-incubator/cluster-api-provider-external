@@ -11,6 +11,7 @@ import (
 	externalcontrolplanev1 "github.com/platform9-incubator/cluster-api-provider-external/api/controlplane/v1beta1"
 	externalinfrav1 "github.com/platform9-incubator/cluster-api-provider-external/api/infrastructure/v1beta1"
 	"github.com/platform9-incubator/cluster-api-provider-external/controllers"
+	"github.com/platform9-incubator/cluster-api-provider-external/pkg/webhooks"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -22,6 +23,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 type RunOptions struct {
@@ -88,10 +90,10 @@ func NewCmdRun(rootOptions *RootOptions) *cobra.Command {
 		"The address the health endpoint binds to.")
 	cmd.Flags().StringVar(&opts.KubeconfigPath, "kubeconfig", opts.KubeconfigPath, "")
 
-	zapFs := flag.NewFlagSet("", flag.ExitOnError)
-	klog.InitFlags(nil)
-	opts.zapOpts.BindFlags(zapFs)
-	cmd.Flags().AddGoFlagSet(zapFs)
+	logFlags := flag.NewFlagSet("", flag.ExitOnError)
+	klog.InitFlags(logFlags)
+	opts.zapOpts.BindFlags(logFlags)
+	cmd.Flags().AddGoFlagSet(logFlags)
 
 	return cmd
 }
@@ -178,6 +180,12 @@ func (o *RunOptions) Run(ctx context.Context) error {
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		return fmt.Errorf("unable to set up ready check: %w", err)
 	}
+
+	hookServer := mgr.GetWebhookServer()
+	machineWebhookHandler := &webhooks.MachineWebhook{Client: mgr.GetClient()}
+	hookServer.Register("/validate-machine-cluster-x-k8s-io-v1beta1-external", &webhook.Admission{
+		Handler: machineWebhookHandler,
+	})
 
 	// +kubebuilder:scaffold:builder
 	log.Info("starting manager")

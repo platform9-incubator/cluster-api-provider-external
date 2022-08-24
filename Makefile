@@ -7,8 +7,6 @@ MAKE_DIR := $(shell dirname $(MAKE_PATH))
 REGISTRY ?= docker.io
 IMAGE_NAME ?= erwinvaneyk/cluster-api-external-controller
 IMG ?= $(REGISTRY)/$(IMAGE_NAME)
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 
 # Allow overriding the imagePullPolicy
 PULL_POLICY ?= Always
@@ -54,10 +52,11 @@ help: ## Display this help.
 ##@ Development
 
 manifests: generate controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." paths="./pkg/webhooks/..." output:crd:artifacts:config=config/crd/bases
 
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./controllers/..." paths="./api/..." paths="./pkg/webhooks/..."
+	$(CONTROLLER_GEN) webhook paths="./pkg/webhooks/..."
 
 .PHONY: verify
 verify: ## Run all static analysis checks.
@@ -139,7 +138,7 @@ manifest-build: kustomize
 tools: controller-gen kustomize
 
 controller-gen: $(LOCALBIN) ## Download controller-gen locally if necessary.
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
 
 $(LOCALBIN): ## Ensure that the directory exists
 	mkdir -p $(LOCALBIN)
