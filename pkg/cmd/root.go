@@ -20,8 +20,8 @@ func NewCmdRoot() *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:              "pf9",
-		Short:            "CLI for interacting with PMK and other PF9 services",
+		Use:              "cape",
+		Short:            "CLI for running and interacting with external clusters in CAPI",
 		PersistentPreRun: cobras.Run(opts),
 	}
 

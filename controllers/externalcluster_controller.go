@@ -215,16 +215,27 @@ func (r *ExternalClusterReconciler) reconcileDelete(ctx context.Context, cluster
 }
 
 func convertNodeToExternalMachine(cluster *clusterv1.Cluster, node *corev1.Node) (*clusterv1.Machine, *externalv1.ExternalMachine) {
-	machineName := node.Name
+	machineName := fmt.Sprintf("%s-%s", cluster.Name, node.Name)
+	labels := map[string]string{
+		"cluster.x-k8s.io/cluster-name": cluster.Name,
+	}
+	if node.Labels != nil {
+		if _, ok := node.Labels["node-role.kubernetes.io/control-plane"]; ok {
+			labels["cluster.x-k8s.io/control-plane"] = ""
+		}
+	}
+
 	return &clusterv1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      machineName,
 				Namespace: cluster.Namespace,
+				Labels:    labels,
 			},
 			Spec: clusterv1.MachineSpec{
 				ClusterName: cluster.Name,
 				Bootstrap: clusterv1.Bootstrap{
-					DataSecretName: pointer.String("non-existent-secret"),
+					// Needs to be defined, does not need to exist.
+					DataSecretName: pointer.String(""),
 				},
 				InfrastructureRef: corev1.ObjectReference{
 					APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
@@ -234,7 +245,6 @@ func convertNodeToExternalMachine(cluster *clusterv1.Cluster, node *corev1.Node)
 				Version:    &node.Status.NodeInfo.KubeletVersion,
 				ProviderID: &node.Spec.ProviderID,
 			},
-			Status: clusterv1.MachineStatus{},
 		}, &externalv1.ExternalMachine{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      machineName,

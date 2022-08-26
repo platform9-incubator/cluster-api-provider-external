@@ -65,7 +65,7 @@ func (r *ExternalControlPlaneReconciler) SetupWithManager(ctx context.Context, m
 func (r *ExternalControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
 
-	log.Info("Fetching ExternalControlPLane from storage")
+	log.Info("Fetching ExternalControlPlane from storage")
 	var externalControlPlane externalv1.ExternalControlPlane
 	if err := r.Get(ctx, req.NamespacedName, &externalControlPlane); err != nil {
 		if apierrors.IsNotFound(err) {

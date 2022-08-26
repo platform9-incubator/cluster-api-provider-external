@@ -39,6 +39,7 @@ type ExternalMachineStatus struct {
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
 	// Addresses contains the IP and/or DNS addresses of the CoxEdge instances.
+	// +optional
 	Addresses []corev1.NodeAddress `json:"addresses,omitempty"`
 }
 
@@ -54,7 +55,8 @@ func (in *ExternalMachine) SetConditions(conditions clusterv1.Conditions) {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Machine",type="string",JSONPath=".metadata.labels.cluster\\.x-k8s\\.io/cluster-name",description="Machine to which this ExternalMachine belongs"
+// +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels.cluster\\.x-k8s\\.io/cluster-name",description="Machine to which this ExternalMachine belongs"
+// +kubebuilder:printcolumn:name="Provider ID",type="string",JSONPath=".spec.providerID",description="The machine-specific provider identifier"
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Machine infrastructure is ready for External instances"
 
 // ExternalMachine is the Schema for the externalclusters API
