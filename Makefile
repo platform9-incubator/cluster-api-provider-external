@@ -102,6 +102,7 @@ run: manifests generate ## Run a controller from your host.
 ##@ Docker
 
 docker-build:  ## Build docker image with the manager.
+	go mod vendor
 	DOCKER_BUILDKIT=1 docker build -t ${IMG} .
 
 docker-push: ## Push docker image with the manager.
