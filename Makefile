@@ -93,19 +93,19 @@ clean: docker-clean ## Clean up build-generated artifacts.
 
 ##@ Build
 
-build: generate verify ## Build manager binary.
-	go build -o bin/manager main.go
+build: generate verify ## Build cape binary.
+	go build -o bin/cape main.go
 
 run: manifests generate ## Run a controller from your host.
 	go run ./main.go
 
 ##@ Docker
 
-docker-build:  ## Build docker image with the manager.
+docker-build:  ## Build docker image with cape.
 	go mod vendor
 	DOCKER_BUILDKIT=1 docker build -t ${IMG} .
 
-docker-push: ## Push docker image with the manager.
+docker-push: ## Push docker image with cape.
 	docker push ${IMG}
 
 .PHONY: docker-clean
